@@ -1,0 +1,131 @@
+.header {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 100%;
+    z-index: 1000;
+    background-color: rgba(255, 255, 255, 0.8);
+    -webkit-box-shadow: 0 1px 4px #7c7c7c;
+    box-shadow: 0 1px 4px #7c7c7c;
+}
+.header__row {
+    padding: 10px 0;
+}
+.img__header>a>img {
+    width: 120px;
+    height: auto;
+}
+.img__head {
+    display: flex;
+}
+.img__header {
+    display: flex;
+    align-items: center;
+}
+.list__item-top,.list__item-bot {
+    display: flex;
+    flex-direction: row-reverse;
+}
+.list__item-top > ul {
+    display: flex;
+}
+.list__item-top>ul>li {
+    margin: 0 5px;
+    padding: 0 8px;
+}
+.list__item-top>ul>li>a {
+    color: #000;
+    font-size: 13px;
+    text-transform: uppercase;
+}
+.list__item-bot > ul {
+    display: flex;
+}
+.list__item-bot>ul>li {
+    margin: 8px;
+    padding: 0 10px;
+}
+.list__item-bot>ul>li>a {
+    color: #000;
+    font-weight: bold;
+    font-size: 15px;
+    text-transform: uppercase;
+    position: relative;
+}
+.yamaha__world {
+    font-size: 11px;
+    font-weight: normal;
+    position: absolute;
+    bottom: -12px;
+    left: 0;
+    right: 0;
+    text-align: center;
+}
+.list__item-top>ul>li>a:hover {
+    opacity: 0.4;
+}
+.list__item-bot>ul>li>a:hover {
+    opacity: 0.4;
+}
+/* down menu */
+.sub__active:hover .downMenu-hd {
+    visibility: visible;
+    opacity: 1;
+    animation: fadeup-center .5s .1s forwards;
+}
+.sub__active-size {
+    padding: 20px 0 !important; 
+}
+.motor{
+    display: flex;
+}
+.list__mts {
+    display: flex;
+    flex-wrap: wrap;
+}
+.item__mts {
+    width: 50%;
+    padding: 10px;
+}
+.item__mts:hover .img__item-motor {
+    transform: scale(1.1);
+}
+.item__mts>a>img {
+    width: 100px;
+    height: 100px;
+}
+.mts {
+    font-size: 16px;
+}
+.mts>a {
+    color: #000;
+    text-align: center;
+}
+.downMenu-hd {
+    margin-top: 16px;
+    padding: 10px 5px 5px 5px;
+    position: absolute;
+    left: 20%;
+    width: 1000px;
+    background-color: rgba(255, 255, 255, 0.9);
+    opacity: 0;
+    visibility: hidden;
+    z-index: 1;
+}
+@keyframes fadeup-center {
+    0% {
+        opacity: 0;
+        -webkit-transform: translateY(20px);
+        transform: translateY(20px);
+    }
+    
+    100% {
+        opacity: 1;
+        -webkit-transform: translateY(0);
+        transform: translateY(0);
+    }
+}
+.item__motor {
+    margin: 5px;
+    background-color: #fff;
+}

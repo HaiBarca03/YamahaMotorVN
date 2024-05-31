@@ -1,0 +1,424 @@
+if(!IS_PSI) {
+$(window).on('load', function() {
+  grecaptcha.ready(function() {
+    grecaptcha.execute(RECAPTCHA_SITE_KEY, {action:'validate_captcha'})
+      .then(function(token) {
+      if(document.getElementById('g-recaptcha-response')) document.getElementById('g-recaptcha-response').value = token;
+    });
+  });
+})
+
+if(typeof Treasure == 'undefined') {
+  !function(t,e){if(void 0===e[t]){e[t]=function(){e[t].clients.push(this),this._init=[Array.prototype.slice.call(arguments)]},e[t].clients=[];for(var r=function(t){return function(){return this["_"+t]=this["_"+t]||[],this["_"+t].push(Array.prototype.slice.call(arguments)),this}},s=["blockEvents","unblockEvents","setSignedMode","setAnonymousMode","resetUUID","addRecord","fetchGlobalID","set","trackEvent","trackPageview","trackClicks","ready"],n=0;n<s.length;n++){var c=s[n];e[t].prototype[c]=r(c)}var o=document.createElement("script");o.type="text/javascript",o.async=!0,o.src=("https:"===document.location.protocol?"https:":"http:")+"//cdn.treasuredata.com/sdk/2.1/td.min.js";var a=document.getElementsByTagName("script")[0];a.parentNode.insertBefore(o,a)}}("Treasure",this);
+}
+var tdEventPopup = new Treasure({
+  host: 'tokyo.in.treasuredata.com',
+  writeKey: SURVEY_WRITEKEY,
+  database: SURVEY_DATABASE,
+  startInSignedMode: true
+});
+
+
+function insertData(data_td) {
+  $.ajax({
+    url: AJAX_LINK,
+    data: data_td,
+    dataType: 'json',
+    type: 'post',
+    beforeSend: function() {},
+    success: function(json) {
+      $('#btnConfirm').html('GỬI CÂU TRẢ LỜI').removeClass('disabled');
+      if(json.error == 0) {
+        setTD(data_td);
+        var $imgSrc = $('.thanks_img img').data('img-src');
+        $('.thanks_img img').attr("src",$imgSrc);
+        $('#popup_event').addClass('finish');
+        localStorage.setItem('popup_event_form_202010', 1);
+        setTimeout(function() {
+          $('#popup_event').addClass('closed');
+          setTimeout(function() {
+            $('#popup_event').removeClass('open');
+            if(window.location.href == APP_URL + 'khaosatyamaha/') window.location.href = window.location.origin;
+          }, 300);
+        }, 7000);
+      } else {
+        if(json.error == 1){
+          $('#phone').next().addClass('activeError').html(json.message);
+          $('#phone').focus();
+        }
+        if(json.error == 2){
+          $('#email').next().addClass('activeError').html(json.message);
+          $('#email').focus();
+        }
+
+        if(json.error == 3){
+          $('#phone').next().addClass('activeError').html(json.message);
+          $('#email').next().addClass('activeError').html(json.message_email);
+          $('#phone').focus();
+        }
+
+
+        grecaptcha.ready(function() {
+          grecaptcha.execute(RECAPTCHA_SITE_KEY, {action:'validate_captcha'})
+            .then(function(token) {
+            document.getElementById('g-recaptcha-response').value = token;
+          });
+        });
+      }
+    },
+  })
+}
+function setTD(data_td) {
+  data_td.td_ssc_id = getCookie('td_ssc_id');
+  data_td.name = data_td.fullname;
+  data_td.dob = data_td.dob_year+'-'+data_td.dob_month+'-'+data_td.dob_date;
+  data_td.province = data_td.state;
+  data_td.district = data_td.city;
+  data_td.bike = data_td.bike_01;
+  if(data_td.bike_02) data_td.bike += ' - ' + data_td.bike_02
+  data_td.currentmotorcycle = data_td.bike;
+  data_td.purchasedyear = data_td.how_long_bought_bike;
+  data_td.question04_grandes_fuel_consumption = decodeURIComponent(data_td.question04_grandes_fuel_consumption);
+  data_td.question05_top3_most_fuel_efficient = decodeURIComponent(data_td.question05_top3_most_fuel_efficient);
+  data_td.email = decodeURIComponent(data_td.email);
+  delete data_td['global_id'];
+  delete data_td['td_uuid'];
+  delete data_td['nonce'];
+  delete data_td['action'];
+  delete data_td['fullname'];
+  delete data_td['dob_date'];
+  delete data_td['dob_month'];
+  delete data_td['dob_year'];
+  delete data_td['state'];
+  delete data_td['city'];
+  delete data_td['g_recaptcha_response'];
+  delete data_td['g-recaptcha-response'];
+
+  console.log(data_td);
+
+  var successCallback = function(td_global_id) {
+    data_td.global_id = td_global_id;
+    data_td.td_uuid = tdEventPopup.client.track.uuid;
+  };
+  var errorCallback = function(err) {
+    console.log('errorCallback', err);
+  };
+  var afterPageviewCallback = function(td_global_id) {
+   tdEventPopup.fetchGlobalID(successCallback, errorCallback,true);
+  };
+
+  tdEventPopup.fetchGlobalID(successCallback, errorCallback,true);
+
+  tdEventPopup.set('$global', 'td_global_id', 'td_global_id');
+  tdEventPopup.set(SURVEY_TABLE, data_td);
+
+  tdEventPopup.trackPageview(SURVEY_TABLE, afterPageviewCallback);
+}
+
+$('#popup_event').hide();
+var locationPath = window.location.pathname;
+var endpoint = "/survey/showsurvey.php?"+Date.now();
+// $.get( endpoint, function( showsurvey ) {
+//   console.log('showsurvey', showsurvey);
+//   if(showsurvey == 2) {
+//     if(locationPath == '/khaosatyamaha/') {
+//       window.location.href = APP_URL;
+//     }
+//     return;
+//   }
+//   var popup_event_form_202010 = localStorage.getItem('popup_event_form_202010');
+//   if(!popup_event_form_202010 && (showsurvey == 1 || locationPath == '/khaosatyamaha/')) {
+//     $('#popup_event').show();
+//     if($('#popup_event').length) {
+//       $('#popup_event .toggle td').slideUp('fast');
+//        $(window).resize(function(){
+//         var wth = $(window).width();
+//         if(wth > 768){
+//           $('#popup_event .toggle th').mouseover(function(){
+//             $(this).parents('.toggle').addClass('active');
+//           $('#popup_event .toggle td').slideDown();
+//           });
+
+//           $('#popup_event .toggle th').click(function(){
+//             $(this).siblings('td').slideToggle();
+//             $(this).parents('.toggle').toggleClass('active');
+//           });
+//         }
+//         }).trigger('resize');
+
+
+
+//       $('body').on('click', '#btnConfirm', function(){
+
+//         var error;
+//         if(!$(this).hasClass('disabled')) {
+//           $(this).addClass('disabled')
+//           $(this).html('<span style="color: #fff;">Loading</span><em></em><em></em><em></em>');
+//           $('#popup_event .toggle').addClass('active');
+
+//           var phone = $('#phone').val();
+//           var mail = $('#email').val();
+//           $('#popup_event .required').each(function(){
+//             var elm = $(this),
+//              val = $(this).val();
+//             if(val == ''){
+//               elm.parents('.box').children('.errorMessage').addClass('activeError');
+//               if(elm.parents('.box01').length){
+//                 elm.parents('.box01').find('.errorMessage').addClass('activeError');
+//               }
+//               event.preventDefault();
+//             }
+//             else{
+//               elm.parents('.box').children('.errorMessage').removeClass('activeError');
+//               if(elm.parents('.box01').length){
+//                 elm.parents('.box01').find('.errorMessage').removeClass('activeError');
+//               }
+//             }
+//             if($('#popup_event #date.required').val() == '' || $('#popup_event #month.required').val() == '' || $('#popup_event #year.required').val() == ''){
+//               $('.box01').find('.errorMessage').addClass('activeError');
+//               event.preventDefault();
+//             }
+//             else{
+//               $('.box01').find('.errorMessage').removeClass('activeError');
+//             }
+//           });
+
+//           if(phone.length != 10) $('#phone').siblings('.errorMessage').addClass('activeError');
+//           else $('#phone').siblings('.errorMessage').removeClass('activeError');
+
+//           regexMail = /^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+//           if(mail){
+//             if(!regexMail.test(mail)){$('#email').siblings('.errorMessage').addClass('activeError');}
+//             else{$('#email').siblings('.errorMessage').removeClass('activeError');}
+//           }
+//           else {
+//             $('#email').siblings('.errorMessage').removeClass('activeError');
+//           }
+
+
+//           var dataForm = $('#eventform').serialize().split('+').join(' ');
+//           var data_td = JSON.parse('{"' + decodeURI(dataForm).replace(/"/g, '\\"').replace(/&/g, '","').replace(/=/g,'":"') + '"}')
+
+//           error = $('#popup_event .activeError').length;
+//           if(error == 0){
+//             data_td.td_uuid = tdEventPopup.client.track.uuid;
+//             insertData(data_td);
+//           } else {
+//             $('#popup_event .toggle td').slideDown();
+//             $('#btnConfirm').html('GỬI CÂU TRẢ LỜI').removeClass('disabled');
+//           }
+//         }
+
+//         if($($('.activeError')[0]).prev().is('input')) $($('.activeError')[0]).prev().focus();
+//         else $($('.activeError')[0]).prev().find('select').focus();
+
+//         $('#eventform .radio_require').each(function(){
+//           if($(this).find('input[type=radio]:checked').length){
+//             $(this).find('.errorMessage').removeClass('activeError');
+//             $(this).focus();
+//           }
+//           else{
+//             $(this).find('.errorMessage').addClass('activeError');
+//           }
+//         })
+//         event.preventDefault();
+//       });
+
+//       $('.popup-close').click(function(){
+//           $('#popup_event').removeClass('open').removeClass('finish');
+//           localStorage.setItem('popup_event_form_202010', 1);
+//           if(window.location.href == APP_URL + 'khaosatyamaha/') window.location.href = window.location.origin;
+//         })
+
+//       $('#phone').bind('keypress', function (event) {
+//         var regex = new RegExp("^[0-9]+$");
+//         var key = String.fromCharCode(!event.charCode ? event.which : event.charCode);
+//         if (!regex.test(key)) {
+//            event.preventDefault();
+//            return false;
+//         }
+//       });
+
+//       $("body").on('change', '#select01', function(event) {
+//         var slbike = $(this).val();
+//         switch(slbike) {
+//           case 'Yamaha':
+//             $('#select-kind-box').html('<select name="bike_02" id="select-kind" class="required bike-kind"><option value="" selected>Chọn loại xe</option><option value="Grande">Grande</option><option value="Janus">Janus</option><option value="Latte">Latte</option><option value="NVX">NVX</option><option value="Freego">Freego</option><option value="Acruzo">Acruzo</option><option value="Exciter">Exciter</option><option value="Sirius">Sirius</option><option value="Jupiter">Jupiter</option><option value="Xe thể thao">Xe thể thao</option><option value="Khác">Khác</option></select>');
+//             $('#select-kind-box').show();
+//             $('#select02 option[value="Không sử dụng xe máy"]').prop("selected", false);
+//             $('#select02').css('color', '#999');
+//             $('#select-kind').css('color', '#999');
+//             break;
+//           case 'Honda':
+//           case 'Piaggio':
+//           case 'Suzuki':
+//           case 'SYM':
+//           case 'Thương hiệu khác':
+//             $('#select-kind-box').html('<select name="bike_02" id="select-kind" class="required bike-kind"><option value="" selected>Chọn loại xe</option><option value="Xe tay ga">Xe tay ga</option><option value="Xe số">Xe số</option><option value="Xe thể thao">Xe thể thao</option><option value="Khác">Khác</option></select>');
+//             $('#select-kind-box').show();
+//             $('#select02 option[value="Không sử dụng xe máy"]').prop("selected", false);
+//             $('#select02').css('color', '#999');
+//             $('#select-kind').css('color', '#999');
+//             break;
+//           case '':
+//           case 'Không sử dụng xe máy':
+//             $('#select-kind-box').html('');
+//             $('#select-kind-box').hide();
+//             $('#select02 option[value="Không sử dụng xe máy"]').prop("selected", true);
+//             $('#select02').css('color', '#000');
+//             $('#select-kind').css('color', '#999');
+//           case '':
+//             $('#select02 option[value="Không sử dụng xe máy"]').prop("selected", false);
+//           case 'Không sử dụng xe máy':
+//             $('#select02 option[value="Không sử dụng xe máy"]').prop("selected", true);
+//         }
+//       });
+//       $('select').each(function() {
+//         if($(this).val()!=''){
+//                $(this).css('color', '#000');
+//             } else {
+//                $(this).css('color', '#999');
+//             }
+//       });
+//       $("body").on('change', 'select', function(event) {
+//         if($(this).val()!=''){
+//                $(this).css('color', '#000');
+//             } else {
+//                $(this).css('color', '#999');
+//             }
+//       });
+
+//       var list = {'TP. Hà Nội': ["Quận Ba Đình","Quận Bắc Từ Liêm","Quận Cầu Giấy","Quận Đống Đa","Quận Hai Bà Trưng","Quận Hoàn Kiếm","Quận Hoàng Mai","Quận Hà Đông","Quận Long Biên","Quận Nam Từ Liêm","Quận Thanh Xuân","Quận Tây Hồ","Thị xã Sơn Tây","Huyện Ba Vì","Huyện Chương Mỹ","Huyện Đan Phượng","Huyện Đông Anh","Huyện Gia Lâm","Huyện Hoài Đức","Huyện Mê Linh","Huyện Mỹ Đức","Huyện Phú Xuyên","Huyện Phúc Thọ","Huyện Quốc Oai","Huyện Sóc Sơn","Huyện Thanh Oai","Huyện Thanh Trì","Huyện Thường Tín","Huyện Thạch Thất","Huyện Ứng Hòa"],'TP. Hồ Chí Minh': ['Quận 1','Quận 3','Quận 4','Quận 5','Quận 6','Quận 7','Quận 8','Quận 10','Quận 11','Quận 12','Quận Bình Tân','Quận Bình Thạnh','Quận Gò Vấp','Quận Phú Nhuận','Quận Tân Bình','Quận Tân Phú','Thành Phố Thủ Đức','Huyện Bình Chánh','Huyện Cần Giờ','Huyện Củ Chi','Huyện Hóc Môn','Huyện Nhà Bè'],'An Giang': [],'Bà Rịa - Vũng Tàu': [],'Bắc Giang': [],'Bắc Kạn': [],'Bạc Liêu': [],'Bắc Ninh': [],'Bến Tre': [],'Bình Định': [],'Bình Dương': [],'Bình Phước': [],'Bình Thuận': [],'Cà Mau': [],'Cần Thơ': ['Quận Bình Thuỷ','Quận Cái Răng','Quận Ninh Kiều','Quận Ô Môn','Quận Thốt Nốt','Huyện Cờ Đỏ','Huyện Phong Điền','Huyện Thới Lai','Huyện Vĩnh Thạnh'],'Cao Bằng': [],'Đắk Lắk': [],'Đắk Nông': [],'Đà Nẵng': ['Quận Cẩm Lệ','Quận Hải Châu','Quận Liên Chiểu','Quận Ngũ Hành Sơn','Quận Sơn Trà','Quận Thanh Khê','Huyện Hòa Vang'],'Điện Biên': [],'Đồng Nai': [],'Đồng Tháp': [],'Gia Lai': [],'Hà Giang': [],'Hà Nam': [],'Hà Tĩnh': [],'Hải Dương': [],'Hải Phòng': ['Quận Dương Kinh','Quận Đồ Sơn','Quận Hải An','Quận Hồng Bàng','Quận Kiến An','Quận Lê Chân','Quận Ngô Quyền','Huyện An Dương','Huyện An Lão','Huyện Cát Hải','Huyện Kiến Thuỵ','Huyện Tiên Lãng','Huyện Thuỷ Nguyên','Huyện Vĩnh Bảo'],'Hậu Giang': [],'Hoà Bình': [],'Hưng Yên': [],'Khánh Hòa': [],'Kiên Giang': [],'Kon Tum': [],'Lai Châu': [],'Lâm Đồng': [],'Lạng Sơn': [],'Lào Cai': [],'Long An': [],'Nam Định': [],'Nghệ An': [],'Ninh Bình': [],'Ninh Thuận': [],'Phú Thọ': [],'Phú Yên': [],'Quảng Bình': [],'Quảng Nam': [],'Quảng Ngãi': [],'Quảng Ninh': [],'Quảng Trị': [],'Sóc Trăng': [],'Sơn La': [],'Tây Ninh': [],'Thái Bình': [],'Thái Nguyên': [],'Thanh Hóa': [],'Thừa Thiên Huế': [],'Tiền Giang': [],'Trà Vinh': [],'Tuyên Quang': [],'Vĩnh Long': [],'Vĩnh Phúc': [],'Yên Bái': [],};list['An Giang'].push("Thành phố Châu Đốc");list['An Giang'].push("Thành phố Long Xuyên");list['An Giang'].push("Thị xã Tân Châu");list['An Giang'].push("Huyện An Phú");list['An Giang'].push("Huyện Châu Phú");list['An Giang'].push("Huyện Châu Thành");list['An Giang'].push("Huyện Chợ Mới");list['An Giang'].push("Huyện Phú Tân");list['An Giang'].push("Huyện Thoại Sơn");list['An Giang'].push("Huyện Tịnh Biên");list['An Giang'].push("Huyện Tri Tôn");list['Bà Rịa - Vũng Tàu'].push("Thành phố Bà Rịa");list['Bà Rịa - Vũng Tàu'].push("Thành phố Vũng Tàu");list['Bà Rịa - Vũng Tàu'].push("Thị xã Phú Mỹ");list['Bà Rịa - Vũng Tàu'].push("Huyện Châu Đức");list['Bà Rịa - Vũng Tàu'].push("Huyện Đất Đỏ");list['Bà Rịa - Vũng Tàu'].push("Huyện Long Điền");list['Bà Rịa - Vũng Tàu'].push("Huyện Xuyên Mộc");list['Bắc Giang'].push("Thành phố Bắc Giang");list['Bắc Giang'].push("Huyện Hiệp Hòa");list['Bắc Giang'].push("Huyện Lạng Giang");list['Bắc Giang'].push("Huyện Lục Nam");list['Bắc Giang'].push("Huyện Lục Ngạn");list['Bắc Giang'].push("Huyện Sơn Động");list['Bắc Giang'].push("Huyện Tân Yên");list['Bắc Giang'].push("Huyện Việt Yên");list['Bắc Giang'].push("Huyện Yên Dũng");list['Bắc Giang'].push("Huyện Yên Thế");list['Bắc Kạn'].push("Thành Phố Bắc Kạn");list['Bắc Kạn'].push("Huyện Ba Bể");list['Bắc Kạn'].push("Huyện Bạch Thông");list['Bắc Kạn'].push("Huyện Chợ Đồn");list['Bắc Kạn'].push("Huyện Chợ Mới");list['Bắc Kạn'].push("Huyện Na Rì");list['Bắc Kạn'].push("Huyện Ngân Sơn");list['Bắc Kạn'].push("Huyện Pác Nặm");list['Bạc Liêu'].push("Thành phố Bạc Liêu");list['Bạc Liêu'].push("Thị xã Giá Rai");list['Bạc Liêu'].push("Huyện Đông Hải");list['Bạc Liêu'].push("Huyện Hoà Bình");list['Bạc Liêu'].push("Huyện Hồng Dân");list['Bạc Liêu'].push("Huyện Phước Long");list['Bạc Liêu'].push("Huyện Vĩnh Lợi");list['Bắc Ninh'].push("Thành phố Bắc Ninh");list['Bắc Ninh'].push("Thị xã Từ Sơn");list['Bắc Ninh'].push("Huyện Gia Bình");list['Bắc Ninh'].push("Huyện Lương Tài");list['Bắc Ninh'].push("Huyện Quế Võ");list['Bắc Ninh'].push("Huyện Thuận Thành");list['Bắc Ninh'].push("Huyện Tiên Du");list['Bắc Ninh'].push("Huyện Yên Phong");list['Bến Tre'].push("Thành phố Bến Tre");list['Bến Tre'].push("Huyện Ba Tri");list['Bến Tre'].push("Huyện Bình Đại");list['Bến Tre'].push("Huyện Châu Thành");list['Bến Tre'].push("Huyện Chợ Lách");list['Bến Tre'].push("Huyện Giồng Trôm");list['Bến Tre'].push("Huyện Mỏ Cày Bắc");list['Bến Tre'].push("Huyện Mỏ Cày Nam");list['Bến Tre'].push("Huyện Thạnh Phú");list['Bình Định'].push("Thành phố Qui Nhơn");list['Bình Định'].push("Thị xã An Nhơn");list['Bình Định'].push("Huyện An Lão");list['Bình Định'].push("Huyện Hoài Ân");list['Bình Định'].push("Huyện Hoài Nhơn");list['Bình Định'].push("Huyện Phù Cát");list['Bình Định'].push("Huyện Phù Mỹ");list['Bình Định'].push("Huyện Tây Sơn");list['Bình Định'].push("Huyện Tuy Phước");list['Bình Định'].push("Huyện Vân Canh");list['Bình Định'].push("Huyện Vĩnh Thạnh");list['Bình Dương'].push("Thành phố Thủ Dầu Một");list['Bình Dương'].push("Thị xã Bến Cát");list['Bình Dương'].push("Thị xã Dĩ An");list['Bình Dương'].push("Thị xã Tân Uyên");list['Bình Dương'].push("Thị xã Thuận An");list['Bình Dương'].push("Huyện Bắc Tân Uyên");list['Bình Dương'].push("Huyện Bàu Bàng");list['Bình Dương'].push("Huyện Dầu Tiếng");list['Bình Dương'].push("Huyện Phú Giáo");list['Bình Phước'].push("Thành phố Đồng Xoài");list['Bình Phước'].push("Thị xã Bình Long");list['Bình Phước'].push("Thị xã Phước Long");list['Bình Phước'].push("Huyện Bù Đăng");list['Bình Phước'].push("Huyện Bù Đốp");list['Bình Phước'].push("Huyện Bù Gia Mập");list['Bình Phước'].push("Huyện Chơn Thành");list['Bình Phước'].push("Huyện Đồng Phú");list['Bình Phước'].push("Huyện Hớn Quản");list['Bình Phước'].push("Huyện Lộc Ninh");list['Bình Phước'].push("Huyện Phú Riềng");list['Bình Thuận'].push("Thành phố Phan Thiết");list['Bình Thuận'].push("Thị xã La Gi");list['Bình Thuận'].push("Huyện Bắc Bình");list['Bình Thuận'].push("Huyện Đức Linh");list['Bình Thuận'].push("Huyện Hàm Tân");list['Bình Thuận'].push("Huyện Hàm Thuận Bắc");list['Bình Thuận'].push("Huyện Hàm Thuận Nam");list['Bình Thuận'].push("Huyện Phú Quí");list['Bình Thuận'].push("Huyện Tánh Linh");list['Bình Thuận'].push("Huyện Tuy Phong");list['Cà Mau'].push("Thành phố Cà Mau");list['Cà Mau'].push("Huyện Cái Nước");list['Cà Mau'].push("Huyện Đầm Dơi");list['Cà Mau'].push("Huyện Năm Căn");list['Cà Mau'].push("Huyện Ngọc Hiển");list['Cà Mau'].push("Huyện Phú Tân");list['Cà Mau'].push("Huyện Thới Bình");list['Cà Mau'].push("Huyện Trần Văn Thời");list['Cà Mau'].push("Huyện U Minh");list['Cao Bằng'].push("Thành phố Cao Bằng");list['Cao Bằng'].push("Huyện Bảo Lạc");list['Cao Bằng'].push("Huyện Bảo Lâm");list['Cao Bằng'].push("Huyện Hạ Lang");list['Cao Bằng'].push("Huyện Hà Quảng");list['Cao Bằng'].push("Huyện Hoà An");list['Cao Bằng'].push("Huyện Nguyên Bình");list['Cao Bằng'].push("Huyện Phục Hoà");list['Cao Bằng'].push("Huyện Quảng Uyên");list['Cao Bằng'].push("Huyện Thạch An");list['Cao Bằng'].push("Huyện Thông Nông");list['Cao Bằng'].push("Huyện Trà Lĩnh");list['Cao Bằng'].push("Huyện Trùng Khánh");list['Đắk Lắk'].push("Thành phố Buôn Ma Thuột");list['Đắk Lắk'].push("Thị Xã Buôn Hồ");list['Đắk Lắk'].push("Huyện Buôn Đôn");list['Đắk Lắk'].push("Huyện Cư Kuin");list['Đắk Lắk'].push("Huyện Cư M'gar");list['Đắk Lắk'].push("Huyện Ea H'leo");list['Đắk Lắk'].push("Huyện Ea Kar");list['Đắk Lắk'].push("Huyện Ea Súp");list['Đắk Lắk'].push("Huyện Krông A Na");list['Đắk Lắk'].push("Huyện Krông Bông");list['Đắk Lắk'].push("Huyện Krông Búk");list['Đắk Lắk'].push("Huyện Krông Năng");list['Đắk Lắk'].push("Huyện Krông Pắc");list['Đắk Lắk'].push("Huyện Lắk");list['Đắk Lắk'].push("Huyện M'Đrắk");list['Đắk Nông'].push("Thành phố Gia Nghĩa");list['Đắk Nông'].push("Huyện Cư Jút");list['Đắk Nông'].push("Huyện Đăk Glong");list['Đắk Nông'].push("Huyện Đắk Mil");list['Đắk Nông'].push("Huyện Đắk R'Lấp");list['Đắk Nông'].push("Huyện Đắk Song");list['Đắk Nông'].push("Huyện Krông Nô");list['Đắk Nông'].push("Huyện Tuy Đức");list['Điện Biên'].push("Thành phố Điện Biên Phủ");list['Điện Biên'].push("Thị Xã Mường Lay");list['Điện Biên'].push("Huyện Điện Biên");list['Điện Biên'].push("Huyện Điện Biên Đông");list['Điện Biên'].push("Huyện Mường Ảng");list['Điện Biên'].push("Huyện Mường Chà");list['Điện Biên'].push("Huyện Mường Nhé");list['Điện Biên'].push("Huyện Nậm Pồ");list['Điện Biên'].push("Huyện Tủa Chùa");list['Điện Biên'].push("Huyện Tuần Giáo");list['Đồng Nai'].push("Thành phố Biên Hòa");list['Đồng Nai'].push("Thành phố Long Khánh");list['Đồng Nai'].push("Huyện Cẩm Mỹ");list['Đồng Nai'].push("Huyện Định Quán");list['Đồng Nai'].push("Huyện Long Thành");list['Đồng Nai'].push("Huyện Nhơn Trạch");list['Đồng Nai'].push("Huyện Tân Phú");list['Đồng Nai'].push("Huyện Thống Nhất");list['Đồng Nai'].push("Huyện Trảng Bom");list['Đồng Nai'].push("Huyện Vĩnh Cửu");list['Đồng Nai'].push("Huyện Xuân Lộc");list['Đồng Tháp'].push("Thành phố Cao Lãnh");list['Đồng Tháp'].push("Thành phố Sa Đéc");list['Đồng Tháp'].push("Thị xã Hồng Ngự");list['Đồng Tháp'].push("Huyện Cao Lãnh");list['Đồng Tháp'].push("Huyện Châu Thành");list['Đồng Tháp'].push("Huyện Hồng Ngự");list['Đồng Tháp'].push("Huyện Lai Vung");list['Đồng Tháp'].push("Huyện Lấp Vò");list['Đồng Tháp'].push("Huyện Tam Nông");list['Đồng Tháp'].push("Huyện Tân Hồng");list['Đồng Tháp'].push("Huyện Thanh Bình");list['Đồng Tháp'].push("Huyện Tháp Mười");list['Gia Lai'].push("Thành phố Pleiku");list['Gia Lai'].push("Thị xã An Khê");list['Gia Lai'].push("Thị xã Ayun Pa");list['Gia Lai'].push("Huyện Chư Păh");list['Gia Lai'].push("Huyện Chư Prông");list['Gia Lai'].push("Huyện Chư Pưh");list['Gia Lai'].push("Huyện Chư Sê");list['Gia Lai'].push("Huyện Đăk Đoa");list['Gia Lai'].push("Huyện Đăk Pơ");list['Gia Lai'].push("Huyện Đức Cơ");list['Gia Lai'].push("Huyện Ia Grai");list['Gia Lai'].push("Huyện Ia Pa");list['Gia Lai'].push("Huyện KBang");list['Gia Lai'].push("Huyện Kông Chro");list['Gia Lai'].push("Huyện Krông Pa");list['Gia Lai'].push("Huyện Mang Yang");list['Gia Lai'].push("Huyện Phú Thiện");list['Hà Giang'].push("Thành phố Hà Giang");list['Hà Giang'].push("Huyện Bắc Mê");list['Hà Giang'].push("Huyện Bắc Quang");list['Hà Giang'].push("Huyện Đồng Văn");list['Hà Giang'].push("Huyện Hoàng Su Phì");list['Hà Giang'].push("Huyện Mèo Vạc");list['Hà Giang'].push("Huyện Quản Bạ");list['Hà Giang'].push("Huyện Quang Bình");list['Hà Giang'].push("Huyện Vị Xuyên");list['Hà Giang'].push("Huyện Xín Mần");list['Hà Giang'].push("Huyện Yên Minh");list['Hà Nam'].push("Thành phố Phủ Lý");list['Hà Nam'].push("Thị xã Duy Tiên");list['Hà Nam'].push("Huyện Bình Lục");list['Hà Nam'].push("Huyện Kim Bảng");list['Hà Nam'].push("Huyện Lý Nhân");list['Hà Nam'].push("Huyện Thanh Liêm");list['Hà Tĩnh'].push("Thành phố Hà Tĩnh");list['Hà Tĩnh'].push("Thị xã Hồng Lĩnh");list['Hà Tĩnh'].push("Thị xã Kỳ Anh");list['Hà Tĩnh'].push("Huyện Cẩm Xuyên");list['Hà Tĩnh'].push("Huyện Can Lộc");list['Hà Tĩnh'].push("Huyện Đức Thọ");list['Hà Tĩnh'].push("Huyện Hương Khê");list['Hà Tĩnh'].push("Huyện Hương Sơn");list['Hà Tĩnh'].push("Huyện Kỳ Anh");list['Hà Tĩnh'].push("Huyện Lộc Hà");list['Hà Tĩnh'].push("Huyện Nghi Xuân");list['Hà Tĩnh'].push("Huyện Thạch Hà");list['Hà Tĩnh'].push("Huyện Vũ Quang");list['Hải Dương'].push("Thành phố Chí Linh");list['Hải Dương'].push("Thành phố Hải Dương");list['Hải Dương'].push("Thị xã Kinh Môn");list['Hải Dương'].push("Huyện Bình Giang");list['Hải Dương'].push("Huyện Cẩm Giàng");list['Hải Dương'].push("Huyện Gia Lộc");list['Hải Dương'].push("Huyện Kim Thành");list['Hải Dương'].push("Huyện Nam Sách");list['Hải Dương'].push("Huyện Ninh Giang");list['Hải Dương'].push("Huyện Thanh Hà");list['Hải Dương'].push("Huyện Thanh Miện");list['Hải Dương'].push("Huyện Tứ Kỳ");list['Hậu Giang'].push("Thành phố Vị Thanh");list['Hậu Giang'].push("Thị xã Long Mỹ");list['Hậu Giang'].push("Thị xã Ngã Bảy");list['Hậu Giang'].push("Huyện Châu Thành");list['Hậu Giang'].push("Huyện Châu Thành A");list['Hậu Giang'].push("Huyện Long Mỹ");list['Hậu Giang'].push("Huyện Phụng Hiệp");list['Hậu Giang'].push("Huyện Vị Thuỷ");list['Hoà Bình'].push("Thành phố Hòa Bình");list['Hoà Bình'].push("Huyện Cao Phong");list['Hoà Bình'].push("Huyện Đà Bắc");list['Hoà Bình'].push("Huyện Kim Bôi");list['Hoà Bình'].push("Huyện Lạc Sơn");list['Hoà Bình'].push("Huyện Lạc Thủy");list['Hoà Bình'].push("Huyện Lương Sơn");list['Hoà Bình'].push("Huyện Mai Châu");list['Hoà Bình'].push("Huyện Tân Lạc");list['Hoà Bình'].push("Huyện Yên Thủy");list['Hưng Yên'].push("Thành phố Hưng Yên");list['Hưng Yên'].push("Thị xã Mỹ Hào");list['Hưng Yên'].push("Huyện Ân Thi");list['Hưng Yên'].push("Huyện Khoái Châu");list['Hưng Yên'].push("Huyện Kim Động");list['Hưng Yên'].push("Huyện Phù Cừ");list['Hưng Yên'].push("Huyện Tiên Lữ");list['Hưng Yên'].push("Huyện Văn Giang");list['Hưng Yên'].push("Huyện Văn Lâm");list['Hưng Yên'].push("Huyện Yên Mỹ");list['Khánh Hòa'].push("Thành phố Cam Ranh");list['Khánh Hòa'].push("Thành phố Nha Trang");list['Khánh Hòa'].push("Thị xã Ninh Hòa");list['Khánh Hòa'].push("Huyện Cam Lâm");list['Khánh Hòa'].push("Huyện Diên Khánh");list['Khánh Hòa'].push("Huyện Khánh Sơn");list['Khánh Hòa'].push("Huyện Khánh Vĩnh");list['Khánh Hòa'].push("Huyện Trường Sa");list['Khánh Hòa'].push("Huyện Vạn Ninh");list['Kiên Giang'].push("Thành phố Hà Tiên");list['Kiên Giang'].push("Thành phố Rạch Giá");list['Kiên Giang'].push("Huyện An Biên");list['Kiên Giang'].push("Huyện An Minh");list['Kiên Giang'].push("Huyện Châu Thành");list['Kiên Giang'].push("Huyện Giang Thành");list['Kiên Giang'].push("Huyện Giồng Riềng");list['Kiên Giang'].push("Huyện Gò Quao");list['Kiên Giang'].push("Huyện Hòn Đất");list['Kiên Giang'].push("Huyện Kiên Hải");list['Kiên Giang'].push("Huyện Kiên Lương");list['Kiên Giang'].push("Huyện Phú Quốc");list['Kiên Giang'].push("Huyện Tân Hiệp");list['Kiên Giang'].push("Huyện U Minh Thượng");list['Kiên Giang'].push("Huyện Vĩnh Thuận");list['Kon Tum'].push("Thành phố Kon Tum");list['Kon Tum'].push("Huyện Đắk Glei");list['Kon Tum'].push("Huyện Đắk Hà");list['Kon Tum'].push("Huyện Đắk Tô");list['Kon Tum'].push("Huyện Ia H' Drai");list['Kon Tum'].push("Huyện Kon Plông");list['Kon Tum'].push("Huyện Kon Rẫy");list['Kon Tum'].push("Huyện Ngọc Hồi");list['Kon Tum'].push("Huyện Sa Thầy");list['Kon Tum'].push("Huyện Tu Mơ Rông");list['Lai Châu'].push("Thành phố Lai Châu");list['Lai Châu'].push("Huyện Mường Tè");list['Lai Châu'].push("Huyện Nậm Nhùn");list['Lai Châu'].push("Huyện Phong Thổ");list['Lai Châu'].push("Huyện Sìn Hồ");list['Lai Châu'].push("Huyện Tam Đường");list['Lai Châu'].push("Huyện Tân Uyên");list['Lai Châu'].push("Huyện Than Uyên");list['Lâm Đồng'].push("Thành phố Bảo Lộc");list['Lâm Đồng'].push("Thành phố Đà Lạt");list['Lâm Đồng'].push("Huyện Bảo Lâm");list['Lâm Đồng'].push("Huyện Cát Tiên");list['Lâm Đồng'].push("Huyện Đạ Huoai");list['Lâm Đồng'].push("Huyện Đạ Tẻh");list['Lâm Đồng'].push("Huyện Đam Rông");list['Lâm Đồng'].push("Huyện Di Linh");list['Lâm Đồng'].push("Huyện Đơn Dương");list['Lâm Đồng'].push("Huyện Đức Trọng");list['Lâm Đồng'].push("Huyện Lạc Dương");list['Lâm Đồng'].push("Huyện Lâm Hà");list['Lạng Sơn'].push("Thành phố Lạng Sơn");list['Lạng Sơn'].push("Huyện Bắc Sơn");list['Lạng Sơn'].push("Huyện Bình Gia");list['Lạng Sơn'].push("Huyện Cao Lộc");list['Lạng Sơn'].push("Huyện Chi Lăng");list['Lạng Sơn'].push("Huyện Đình Lập");list['Lạng Sơn'].push("Huyện Hữu Lũng");list['Lạng Sơn'].push("Huyện Lộc Bình");list['Lạng Sơn'].push("Huyện Tràng Định");list['Lạng Sơn'].push("Huyện Văn Lãng");list['Lạng Sơn'].push("Huyện Văn Quan");list['Lào Cai'].push("Thành phố Lào Cai");list['Lào Cai'].push("Thị xã Sa Pa");list['Lào Cai'].push("Huyện Bắc Hà");list['Lào Cai'].push("Huyện Bảo Thắng");list['Lào Cai'].push("Huyện Bảo Yên");list['Lào Cai'].push("Huyện Bát Xát");list['Lào Cai'].push("Huyện Mường Khương");list['Lào Cai'].push("Huyện Si Ma Cai");list['Lào Cai'].push("Huyện Văn Bàn");list['Long An'].push("Thành phố Tân An");list['Long An'].push("Thị xã Kiến Tường");list['Long An'].push("Huyện Bến Lức");list['Long An'].push("Huyện Cần Đước");list['Long An'].push("Huyện Cần Giuộc");list['Long An'].push("Huyện Châu Thành");list['Long An'].push("Huyện Đức Hòa");list['Long An'].push("Huyện Đức Huệ");list['Long An'].push("Huyện Mộc Hóa");list['Long An'].push("Huyện Tân Hưng");list['Long An'].push("Huyện Tân Thạnh");list['Long An'].push("Huyện Tân Trụ");list['Long An'].push("Huyện Thạnh Hóa");list['Long An'].push("Huyện Thủ Thừa");list['Long An'].push("Huyện Vĩnh Hưng");list['Nam Định'].push("Thành phố Nam Định");list['Nam Định'].push("Huyện Giao Thủy");list['Nam Định'].push("Huyện Hải Hậu");list['Nam Định'].push("Huyện Mỹ Lộc");list['Nam Định'].push("Huyện Nam Trực");list['Nam Định'].push("Huyện Nghĩa Hưng");list['Nam Định'].push("Huyện Trực Ninh");list['Nam Định'].push("Huyện Vụ Bản");list['Nam Định'].push("Huyện Xuân Trường");list['Nam Định'].push("Huyện Ý Yên");list['Nghệ An'].push("Thành phố Vinh");list['Nghệ An'].push("Thị xã Cửa Lò");list['Nghệ An'].push("Thị xã Hoàng Mai");list['Nghệ An'].push("Thị xã Thái Hoà");list['Nghệ An'].push("Huyện Anh Sơn");list['Nghệ An'].push("Huyện Con Cuông");list['Nghệ An'].push("Huyện Diễn Châu");list['Nghệ An'].push("Huyện Đô Lương");list['Nghệ An'].push("Huyện Hưng Nguyên");list['Nghệ An'].push("Huyện Kỳ Sơn");list['Nghệ An'].push("Huyện Nam Đàn");list['Nghệ An'].push("Huyện Nghi Lộc");list['Nghệ An'].push("Huyện Nghĩa Đàn");list['Nghệ An'].push("Huyện Quế Phong");list['Nghệ An'].push("Huyện Quỳ Châu");list['Nghệ An'].push("Huyện Quỳ Hợp");list['Nghệ An'].push("Huyện Quỳnh Lưu");list['Nghệ An'].push("Huyện Tân Kỳ");list['Nghệ An'].push("Huyện Thanh Chương");list['Nghệ An'].push("Huyện Tương Dương");list['Nghệ An'].push("Huyện Yên Thành");list['Ninh Bình'].push("Thành phố Ninh Bình");list['Ninh Bình'].push("Thành phố Tam Điệp");list['Ninh Bình'].push("Huyện Gia Viễn");list['Ninh Bình'].push("Huyện Hoa Lư");list['Ninh Bình'].push("Huyện Kim Sơn");list['Ninh Bình'].push("Huyện Nho Quan");list['Ninh Bình'].push("Huyện Yên Khánh");list['Ninh Bình'].push("Huyện Yên Mô");list['Ninh Thuận'].push("Thành phố Phan Rang-Tháp Chàm");list['Ninh Thuận'].push("Huyện Bác Ái");list['Ninh Thuận'].push("Huyện Ninh Hải");list['Ninh Thuận'].push("Huyện Ninh Phước");list['Ninh Thuận'].push("Huyện Ninh Sơn");list['Ninh Thuận'].push("Huyện Thuận Bắc");list['Ninh Thuận'].push("Huyện Thuận Nam");list['Phú Thọ'].push("Thành phố Việt Trì");list['Phú Thọ'].push("Thị xã Phú Thọ");list['Phú Thọ'].push("Huyện Cẩm Khê");list['Phú Thọ'].push("Huyện Đoan Hùng");list['Phú Thọ'].push("Huyện Hạ Hoà");list['Phú Thọ'].push("Huyện Lâm Thao");list['Phú Thọ'].push("Huyện Phù Ninh");list['Phú Thọ'].push("Huyện Tam Nông");list['Phú Thọ'].push("Huyện Tân Sơn");list['Phú Thọ'].push("Huyện Thanh Ba");list['Phú Thọ'].push("Huyện Thanh Sơn");list['Phú Thọ'].push("Huyện Thanh Thuỷ");list['Phú Thọ'].push("Huyện Yên Lập");list['Phú Yên'].push("Thành phố Tuy Hoà");list['Phú Yên'].push("Thị xã Sông Cầu");list['Phú Yên'].push("Huyện Đông Hòa");list['Phú Yên'].push("Huyện Đồng Xuân");list['Phú Yên'].push("Huyện Phú Hoà");list['Phú Yên'].push("Huyện Sơn Hòa");list['Phú Yên'].push("Huyện Sông Hinh");list['Phú Yên'].push("Huyện Tây Hoà");list['Phú Yên'].push("Huyện Tuy An");list['Quảng Bình'].push("Thành Phố Đồng Hới");list['Quảng Bình'].push("Thị xã Ba Đồn");list['Quảng Bình'].push("Huyện Bố Trạch");list['Quảng Bình'].push("Huyện Lệ Thủy");list['Quảng Bình'].push("Huyện Minh Hóa");list['Quảng Bình'].push("Huyện Quảng Ninh");list['Quảng Bình'].push("Huyện Quảng Trạch");list['Quảng Bình'].push("Huyện Tuyên Hóa");list['Quảng Nam'].push("Thành phố Hội An");list['Quảng Nam'].push("Thành phố Tam Kỳ");list['Quảng Nam'].push("Thị xã Điện Bàn");list['Quảng Nam'].push("Huyện Bắc Trà My");list['Quảng Nam'].push("Huyện Đại Lộc");list['Quảng Nam'].push("Huyện Đông Giang");list['Quảng Nam'].push("Huyện Duy Xuyên");list['Quảng Nam'].push("Huyện Hiệp Đức");list['Quảng Nam'].push("Huyện Nam Giang");list['Quảng Nam'].push("Huyện Nam Trà My");list['Quảng Nam'].push("Huyện Nông Sơn");list['Quảng Nam'].push("Huyện Núi Thành");list['Quảng Nam'].push("Huyện Phú Ninh");list['Quảng Nam'].push("Huyện Phước Sơn");list['Quảng Nam'].push("Huyện Quế Sơn");list['Quảng Nam'].push("Huyện Tây Giang");list['Quảng Nam'].push("Huyện Thăng Bình");list['Quảng Nam'].push("Huyện Tiên Phước");list['Quảng Ngãi'].push("Thành phố Quảng Ngãi");list['Quảng Ngãi'].push("Huyện Ba Tơ");list['Quảng Ngãi'].push("Huyện Bình Sơn");list['Quảng Ngãi'].push("Huyện Đức Phổ");list['Quảng Ngãi'].push("Huyện Lý Sơn");list['Quảng Ngãi'].push("Huyện Minh Long");list['Quảng Ngãi'].push("Huyện Mộ Đức");list['Quảng Ngãi'].push("Huyện Nghĩa Hành");list['Quảng Ngãi'].push("Huyện Sơn Hà");list['Quảng Ngãi'].push("Huyện Sơn Tây");list['Quảng Ngãi'].push("Huyện Sơn Tịnh");list['Quảng Ngãi'].push("Huyện Tây Trà");list['Quảng Ngãi'].push("Huyện Trà Bồng");list['Quảng Ngãi'].push("Huyện Tư Nghĩa");list['Quảng Ninh'].push("Thành phố Cẩm Phả");list['Quảng Ninh'].push("Thành phố Hạ Long");list['Quảng Ninh'].push("Thành phố Móng Cái");list['Quảng Ninh'].push("Thành phố Uông Bí");list['Quảng Ninh'].push("Thị xã Đông Triều");list['Quảng Ninh'].push("Thị xã Quảng Yên");list['Quảng Ninh'].push("Huyện Ba Chẽ");list['Quảng Ninh'].push("Huyện Bình Liêu");list['Quảng Ninh'].push("Huyện Cô Tô");list['Quảng Ninh'].push("Huyện Đầm Hà");list['Quảng Ninh'].push("Huyện Hải Hà");list['Quảng Ninh'].push("Huyện Tiên Yên");list['Quảng Ninh'].push("Huyện Vân Đồn");list['Quảng Trị'].push("Thành phố Đông Hà");list['Quảng Trị'].push("Thị xã Quảng Trị");list['Quảng Trị'].push("Huyện Cam Lộ");list['Quảng Trị'].push("Huyện Đa Krông");list['Quảng Trị'].push("Huyện Gio Linh");list['Quảng Trị'].push("Huyện Hải Lăng");list['Quảng Trị'].push("Huyện Hướng Hóa");list['Quảng Trị'].push("Huyện Triệu Phong");list['Quảng Trị'].push("Huyện Vĩnh Linh");list['Sóc Trăng'].push("Thành phố Sóc Trăng");list['Sóc Trăng'].push("Thị xã Ngã Năm");list['Sóc Trăng'].push("Thị xã Vĩnh Châu");list['Sóc Trăng'].push("Huyện Châu Thành");list['Sóc Trăng'].push("Huyện Cù Lao Dung");list['Sóc Trăng'].push("Huyện Kế Sách");list['Sóc Trăng'].push("Huyện Long Phú");list['Sóc Trăng'].push("Huyện Mỹ Tú");list['Sóc Trăng'].push("Huyện Mỹ Xuyên");list['Sóc Trăng'].push("Huyện Thạnh Trị");list['Sóc Trăng'].push("Huyện Trần Đề");list['Sơn La'].push("Thành phố Sơn La");list['Sơn La'].push("Huyện Bắc Yên");list['Sơn La'].push("Huyện Mai Sơn");list['Sơn La'].push("Huyện Mộc Châu");list['Sơn La'].push("Huyện Mường La");list['Sơn La'].push("Huyện Phù Yên");list['Sơn La'].push("Huyện Quỳnh Nhai");list['Sơn La'].push("Huyện Sông Mã");list['Sơn La'].push("Huyện Sốp Cộp");list['Sơn La'].push("Huyện Thuận Châu");list['Sơn La'].push("Huyện Vân Hồ");list['Sơn La'].push("Huyện Yên Châu");list['Tây Ninh'].push("Thành phố Tây Ninh");list['Tây Ninh'].push("Huyện Bến Cầu");list['Tây Ninh'].push("Huyện Châu Thành");list['Tây Ninh'].push("Huyện Dương Minh Châu");list['Tây Ninh'].push("Huyện Gò Dầu");list['Tây Ninh'].push("Huyện Hòa Thành");list['Tây Ninh'].push("Huyện Tân Biên");list['Tây Ninh'].push("Huyện Tân Châu");list['Tây Ninh'].push("Huyện Trảng Bàng");list['Thái Bình'].push("Thành phố Thái Bình");list['Thái Bình'].push("Huyện Đông Hưng");list['Thái Bình'].push("Huyện Hưng Hà");list['Thái Bình'].push("Huyện Kiến Xương");list['Thái Bình'].push("Huyện Quỳnh Phụ");list['Thái Bình'].push("Huyện Thái Thụy");list['Thái Bình'].push("Huyện Tiền Hải");list['Thái Bình'].push("Huyện Vũ Thư");list['Thái Nguyên'].push("Thành phố Sông Công");list['Thái Nguyên'].push("Thành phố Thái Nguyên");list['Thái Nguyên'].push("Thị xã Phổ Yên");list['Thái Nguyên'].push("Huyện Đại Từ");list['Thái Nguyên'].push("Huyện Định Hóa");list['Thái Nguyên'].push("Huyện Đồng Hỷ");list['Thái Nguyên'].push("Huyện Phú Bình");list['Thái Nguyên'].push("Huyện Phú Lương");list['Thái Nguyên'].push("Huyện Võ Nhai");list['Thanh Hóa'].push("Thành phố Sầm Sơn");list['Thanh Hóa'].push("Thành phố Thanh Hóa");list['Thanh Hóa'].push("Thị xã Bỉm Sơn");list['Thanh Hóa'].push("Huyện Bá Thước");list['Thanh Hóa'].push("Huyện Cẩm Thủy");list['Thanh Hóa'].push("Huyện Đông Sơn");list['Thanh Hóa'].push("Huyện Hà Trung");list['Thanh Hóa'].push("Huyện Hậu Lộc");list['Thanh Hóa'].push("Huyện Hoằng Hóa");list['Thanh Hóa'].push("Huyện Lang Chánh");list['Thanh Hóa'].push("Huyện Mường Lát");list['Thanh Hóa'].push("Huyện Nga Sơn");list['Thanh Hóa'].push("Huyện Ngọc Lặc");list['Thanh Hóa'].push("Huyện Như Thanh");list['Thanh Hóa'].push("Huyện Như Xuân");list['Thanh Hóa'].push("Huyện Nông Cống");list['Thanh Hóa'].push("Huyện Quan Hóa");list['Thanh Hóa'].push("Huyện Quan Sơn");list['Thanh Hóa'].push("Huyện Quảng Xương");list['Thanh Hóa'].push("Huyện Thạch Thành");list['Thanh Hóa'].push("Huyện Thiệu Hóa");list['Thanh Hóa'].push("Huyện Thọ Xuân");list['Thanh Hóa'].push("Huyện Thường Xuân");list['Thanh Hóa'].push("Huyện Tĩnh Gia");list['Thanh Hóa'].push("Huyện Triệu Sơn");list['Thanh Hóa'].push("Huyện Vĩnh Lộc");list['Thanh Hóa'].push("Huyện Yên Định");list['Thừa Thiên Huế'].push("Thành phố Huế");list['Thừa Thiên Huế'].push("Thị xã Hương Thủy");list['Thừa Thiên Huế'].push("Thị xã Hương Trà");list['Thừa Thiên Huế'].push("Huyện A Lưới");list['Thừa Thiên Huế'].push("Huyện Nam Đông");list['Thừa Thiên Huế'].push("Huyện Phong Điền");list['Thừa Thiên Huế'].push("Huyện Phú Lộc");list['Thừa Thiên Huế'].push("Huyện Phú Vang");list['Thừa Thiên Huế'].push("Huyện Quảng Điền");list['Tiền Giang'].push("Thành phố Mỹ Tho");list['Tiền Giang'].push("Thị xã Cai Lậy");list['Tiền Giang'].push("Thị xã Gò Công");list['Tiền Giang'].push("Huyện Cái Bè");list['Tiền Giang'].push("Huyện Cai Lậy");list['Tiền Giang'].push("Huyện Châu Thành");list['Tiền Giang'].push("Huyện Chợ Gạo");list['Tiền Giang'].push("Huyện Gò Công Đông");list['Tiền Giang'].push("Huyện Gò Công Tây");list['Tiền Giang'].push("Huyện Tân Phú Đông");list['Tiền Giang'].push("Huyện Tân Phước");list['Trà Vinh'].push("Thành phố Trà Vinh");list['Trà Vinh'].push("Thị xã Duyên Hải");list['Trà Vinh'].push("Huyện Càng Long");list['Trà Vinh'].push("Huyện Cầu Kè");list['Trà Vinh'].push("Huyện Cầu Ngang");list['Trà Vinh'].push("Huyện Châu Thành");list['Trà Vinh'].push("Huyện Duyên Hải");list['Trà Vinh'].push("Huyện Tiểu Cần");list['Trà Vinh'].push("Huyện Trà Cú");list['Tuyên Quang'].push("Thành phố Tuyên Quang");list['Tuyên Quang'].push("Huyện Chiêm Hóa");list['Tuyên Quang'].push("Huyện Hàm Yên");list['Tuyên Quang'].push("Huyện Lâm Bình");list['Tuyên Quang'].push("Huyện Na Hang");list['Tuyên Quang'].push("Huyện Sơn Dương");list['Tuyên Quang'].push("Huyện Yên Sơn");list['Vĩnh Long'].push("Thành phố Vĩnh Long");list['Vĩnh Long'].push("Thị xã Bình Minh");list['Vĩnh Long'].push("Huyện  Vũng Liêm");list['Vĩnh Long'].push("Huyện Bình Tân");list['Vĩnh Long'].push("Huyện Long Hồ");list['Vĩnh Long'].push("Huyện Mang Thít");list['Vĩnh Long'].push("Huyện Tam Bình");list['Vĩnh Long'].push("Huyện Trà Ôn");list['Vĩnh Phúc'].push("Thành phố Phúc Yên");list['Vĩnh Phúc'].push("Thành phố Vĩnh Yên");list['Vĩnh Phúc'].push("Huyện Bình Xuyên");list['Vĩnh Phúc'].push("Huyện Lập Thạch");list['Vĩnh Phúc'].push("Huyện Sông Lô");list['Vĩnh Phúc'].push("Huyện Tam Đảo");list['Vĩnh Phúc'].push("Huyện Tam Dương");list['Vĩnh Phúc'].push("Huyện Vĩnh Tường");list['Vĩnh Phúc'].push("Huyện Yên Lạc");list['Yên Bái'].push("Thành phố Yên Bái");list['Yên Bái'].push("Thị xã Nghĩa Lộ");list['Yên Bái'].push("Huyện Lục Yên");list['Yên Bái'].push("Huyện Mù Căng Chải");list['Yên Bái'].push("Huyện Trạm Tấu");list['Yên Bái'].push("Huyện Trấn Yên");list['Yên Bái'].push("Huyện Văn Chấn");list['Yên Bái'].push("Huyện Văn Yên");list['Yên Bái'].push("Huyện Yên Bình");
+
+//       var objectKey = Object.keys(list);
+//       for (var i = 0; i < objectKey.length; i++) {
+//         $('#select_state').append('<option value="'+objectKey[i]+'">'+objectKey[i]+'</option>');
+//       }
+//       $('#select_state').on('change', function() {
+//         var value = $(this).val();
+//         $('#select_city').html('<option value="">Vui lòng chọn</option>');
+//         // list[value].sort();
+//         for (var i = 0; i < list[value].length; i++) {
+//           $('#select_city').append('<option value="'+list[value][i]+'">'+list[value][i]+'</option>');
+//         }
+//       })
+//     }
+//   } else {
+//     $('#popup_event').remove();
+//   }
+// });
+}
+
+// popup exciter
+
+
+function getCookiePopup(cname) {
+  var name = cname + "=";
+  var ca = document.cookie.split(';');
+  for (var i = 0; i < ca.length; i++) {
+    var c = ca[i];
+    while (c.charAt(0) == ' ') {
+      c = c.substring(1);
+    }
+    if (c.indexOf(name) == 0) {
+      return c.substring(name.length, c.length);
+    }
+  }
+  return "";
+}
+
+function setCookiePopup(cname, cvalue, exdays) {
+  var d = new Date();
+  d.setTime(d.getTime() + (exdays * 24 * 60 * 60 * 1000));
+  var expires = "expires=" + d.toUTCString();
+  document.cookie = cname + "=" + cvalue + ";" + expires + ";path=/";
+}
+
+$(window).on('load', function(event) {
+  // var endpoint = "/survey/showpopup.php?"+Date.now();
+  // $.get( endpoint, function( showpopup ) {
+  //   console.log('showpopup', showpopup);
+  //   if($('#popup_exciter').length && getCookiePopup('popExciterCookie') != 'closed' && showpopup == 1){
+  //     //show poup
+  //     setTimeout(function(){
+  //       $('#popup_exciter').addClass('popup_exciter__active');
+  //     },2000)
+
+  //     // click close button
+  //     $('.popup_exciter__close').on('click', function(event) {
+  //      $('#popup_exciter').removeClass('popup_exciter__active');
+  //       setCookiePopup( 'popExciterCookie', 'closed', 999999999 );
+  //     });
+  //     // click register button
+  //     $('.popup_exciter__inner a').on('click', function(event) {
+  //       var target = $('.popup_exciter__inner a').attr('href');
+  //       event.preventDefault();
+  //       setTimeout(function(){
+  //         window.open(target, '_blank');
+  //          $('#popup_exciter').removeClass('popup_exciter__active');
+  //         setCookiePopup( 'popExciterCookie', 'closed', 999999999 );
+  //       },500)
+  //     });
+  //   }
+  // });
+});
+
+
+
+
+
+// popup exciter155
+
+$(function() {
+  // if(getCookiePopup('exciter155Cookie') == 'closed'){
+  //   $('#popup_exciter155').css('display', 'none');
+  // }
+});
+
+$(window).on('load', function(event) {
+  if($('.ft-yamaha').length > 0){
+    $('.ft-yamaha').addClass('ft-yamaha__show');
+    $('.ft-yamaha__close').on('click', function(event) {
+      $('.ft-yamaha').removeClass('ft-yamaha__show');
+      sessionStorage.setItem('ft-yamaha', 'cache');
+      $('#popup_exciter155').removeClass('hasSocial')
+    });
+    if (sessionStorage.getItem("ft-yamaha")) {
+      $('.ft-yamaha').removeClass('ft-yamaha__show');
+    }
+  }
+});
+// popup_form_register
+$(window).on('load', function(event) {
+  if($('#popup_form_register').length){
+    var wth = $(window).width();
+    if(wth > 768) {
+      setTimeout(function(){
+        $('#popup_form_register').addClass('register-active');
+      },2000)
+    } else {
+      setTimeout(function(){
+        $('#popup_form_register').addClass('register-active');
+      },5000)
+    }
+    $('.register-close').on('click', function(event) {
+      $('#popup_form_register').removeClass('register-active');
+    });
+  }
+});
+
+
+
+$(window).on('load', function(event) {
+  if($('.ft-yamaha').length > 0 && $('.ft-yamaha').hasClass('ft-yamaha__show')){
+    $('#popup_exciter155').addClass('hasSocial');
+  }
+  if($('#popup_exciter155').length){
+    var wth = $(window).width();
+    $('#popup_exciter155').addClass('popup_exciter155-active');
+    $('.exciter155-close').on('click', function(event) {
+      $('#popup_exciter155').removeClass('popup_exciter155-active');
+      // setCookiePopup( 'exciter155Cookie', 'closed', 0.125 );
+    });
+  }
+});
