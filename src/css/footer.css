@@ -219,3 +219,9 @@ button {
     visibility: hidden;
     opacity: 0;
 }
+
+/* check form */
+.button__2>a {
+    color: #fff !important;
+    font-weight: bold;
+  }

@@ -1,0 +1,110 @@
+.container_form {
+    padding: 150px;
+}
+.contect__cty {
+    text-align: center;
+    font-size: 35px;
+    color: #555;
+    font-weight: bold;
+    padding-bottom: 50px;
+}
+.form__register {
+    align-items: center;
+    display: flex;
+    justify-content: center;
+    flex-direction: column;
+}
+.btnSubmit_box {
+    justify-content: center;
+    display: flex;
+    margin: 20px 1px;
+}
+.btnSubmit {
+    padding: 15px 0;
+    width: 150px;
+    border-radius: 10px;
+    cursor: pointer;
+}
+.btnSubmit:hover {
+    background-color:darkslategrey;
+}
+.btnSubmit>span {
+    font-size: 18px;
+}
+th {
+    padding-right: 25px;
+    font-size: 15px;
+    float: right;
+}
+tr {
+    align-items: flex-start;
+    flex-direction: column;
+    display: flex;
+}
+
+table.tableContact {
+    width: 100%;
+}
+.wpcf7-textarea, .wpcf7-text{
+    width: 700px;
+}
+.wpcf7-textarea {
+    padding: 10px
+}
+.wpcf7-form-control-wrap>input {
+    margin: 10px 0;
+    padding: 15px;
+}
+td.acceptance {
+    font-size: 15px;
+    margin: 20px 0;
+    width: 700px;
+}
+label.lblOption {
+    padding-left: 5px;
+}
+input[type="checkbox"] {
+    font-size: 13px;
+}
+/* confirm */
+.confirmForm {
+    display: none;
+}
+.box__comfirm {
+    transform: translateX(-50%);
+    left: 50%;
+    top: 25%;
+    position: absolute;
+    border-radius: 10px;
+    text-align: center;
+    padding: 20px;
+    background-color: aquamarine;
+    width: 400px;
+    height: 150px;
+    color: red;
+    z-index: 1101;
+}
+p.tit__box-cf {
+    font-size: 20px;
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+body::after {
+    display: none;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1100;
+    content: "";
+    position: absolute;
+    background: linear-gradient(to bottom, rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0));
+    /* Gradient mờ dần */
+}
+
+body.submitted::after {
+    display: block;
+    /* Ẩn pseudo-element sau khi form đã được submit */
+}
+.opFrmBook {
+    display: block !important;
+}
